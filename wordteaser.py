@@ -51,11 +51,8 @@ def main() -> None:
     text = args.text
     hits = find(text, words)
 
-    for i, combo in enumerate(chain.from_iterable(map(flatten, hits)), start=1):
-        print(i, combo)
-
-    # for i, group in enumerate(hits, start=1):
-    #     print(flatten(group))
+    for combo in chain.from_iterable(map(flatten, hits)):
+        print(combo)
 
 
 # --------------------------------------------------
@@ -68,21 +65,6 @@ def read_wordlist(fh: TextIO) -> Lookup:
         words[word[0]].append(word)
 
     return words
-
-
-# --------------------------------------------------
-def test_read_wordlist() -> None:
-    """ Test read_wordlist """
-
-    text = '\n'.join(
-        ['a', 'b', 'c', 'd', 'ab', 'bc', 'cd', 'ad', 'abc', 'bcd'])
-
-    assert read_wordlist(io.StringIO(text)) == {
-        'a': ['a', 'ab', 'ad', 'abc'],
-        'b': ['b', 'bc', 'bcd'],
-        'c': ['c', 'cd'],
-        'd': ['d']
-    }
 
 
 # --------------------------------------------------
@@ -107,21 +89,6 @@ def find(text: str, words: Lookup) -> List[Any]:
 
 
 # --------------------------------------------------
-def test_find() -> None:
-    """ Test find """
-
-    words = {
-        'a': ['a', 'ab', 'ad', 'abc'],
-        'b': ['b', 'bc', 'bcd'],
-        'c': ['c', 'cd'],
-        'd': ['d']
-    }
-
-    assert find('abc', words) == [['a', ['b', ['c', '']], ['bc', '']],
-                                  ['ab', ['c', '']], ['abc', '']]
-
-
-# --------------------------------------------------
 def stringer(xs: List[Any]) -> str:
     """
     Turn the nested list of lists from find() into a string
@@ -141,36 +108,12 @@ def stringer(xs: List[Any]) -> str:
 
 
 # --------------------------------------------------
-def test_stringer() -> None:
-    """ Test stringer """
-
-    assert stringer(['a', '']) == 'a'
-    assert stringer(['abc', '']) == 'abc'
-    assert stringer(['a', ['b', ['c', '']]]) == 'a+b+c'
-    assert stringer(['ab', ['c', '']]) == 'ab+c'
-    assert stringer(['a', ['b', ['c', '']], ['bc', '']]) == 'a+b+c:a+bc'
-    assert stringer(['a', ['b', ['c', ['d', '']]]]) == 'a+b+c+d'
-
-
-# --------------------------------------------------
 def flatten(xs: List[Any]) -> str:
     """
     Turn the nested list of lists from find() into single list
     """
 
     return [word.split('+') for word in stringer(xs).split(':')]
-
-
-# --------------------------------------------------
-def test_flatten() -> None:
-    """ Test flatten """
-
-    # hits = [['a', ['b', ['c', '']], ['bc', '']], ['ab', ['c', '']],
-    #         ['abc', '']]
-
-    hits = ['a', ['b', ['c', '']], ['bc', '']]
-
-    assert flatten(hits) == [['a', 'b', 'c'], ['a', 'bc']]
 
 
 # --------------------------------------------------
