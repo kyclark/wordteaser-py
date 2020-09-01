@@ -65,23 +65,23 @@ The program will return the following combinations:
 
 ```
 $ ./wordteaser.py -w tests/dict1.txt abc
-1 ['a', 'b', 'c']
-2 ['a', 'bc']
-3 ['ab', 'c']
-4 ['abc']
+['a', 'b', 'c']
+['a', 'bc']
+['ab', 'c']
+['abc']
 ```
 
 It is currently failing with the input "abcd" as the 2nd group is missing the "a":
 
 ```
 $ ./wordteaser.py -w tests/dict1.txt abcd
-1 ['a', 'b', 'c', 'd']
-2 ['b', 'cd']
-3 ['a', 'bc', 'd']
-4 ['a', 'bcd']
-5 ['ab', 'c', 'd']
-6 ['ab', 'cd']
-7 ['abc', 'd']
+['a', 'b', 'c', 'd']
+['b', 'cd']
+['a', 'bc', 'd']
+['a', 'bcd']
+['ab', 'c', 'd']
+['ab', 'cd']
+['abc', 'd']
 ```
 
 The `find()` function that finds the possible combinations works.
@@ -98,14 +98,31 @@ We can see the first grouping finds that "a" could be followed by "b" which migh
 ```
 ['a',
     ['b', 
-        ['c', ['d', '']],    1 ['a', 'b', 'c', 'd']
-        ['cd', '']],         2 ['b', 'cd']      <=== Missing the leading "a"
-    ['bc', ['d', '']],       3 ['a', 'bc', 'd']
-    ['bcd', '']              4 ['a', 'bcd']
+        ['c', ['d', '']],   => ['a', 'b', 'c', 'd']
+        ['cd', '']],        => ['b', 'cd']      <=== Missing the leading "a"
+    ['bc', ['d', '']],      => ['a', 'bc', 'd']
+    ['bcd', '']             => ['a', 'bcd']
 ]
 ```
 
 I should probably consider using a directed graph to find my way through the nested lists, and for that I've looked at Python's "anytree" and "networkx" modules (see below).
+
+FWIW, given this dictionary:
+
+```
+$ cat tests/dict3.txt
+pt
+patient
+dx
+diagnosis
+```
+
+It does appear to work:
+
+```
+$ ./wordteaser.py -w tests/dict3.txt ptdx
+['pt', 'dx']
+```
 
 # See also
 
