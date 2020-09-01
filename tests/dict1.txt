@@ -1,9 +1,10 @@
 a
 b
 c
+d
 ab
 bc
-ac
+cd
+ad
 abc
-bca
-cab
+bcd
