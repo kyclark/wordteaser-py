@@ -85,6 +85,21 @@ ab + c + d
 a + b + c + d
 ```
 
+You can require that the composite words be of a minimum length:
+
+```
+$ ./wordteaser.py -w tests/dict1.txt -m 2 abcd
+ab + cd
+```
+
+For instance, if you use the default dictionary that has single-letters, then you really need to indicate a word length of at least 2:
+
+```
+$ ./wordteaser.py -m 2 tableapplechairtablecupboard
+table + apple + chair + table + cupboard
+table + apple + chair + table + cup + board
+```
+
 For practical application, we can use this dictionary:
 
 ```
@@ -100,6 +115,8 @@ $ ./wordteaser.py -w tests/dict3.txt ptdx patientdiagnosis
 pt + dx
 patient + diagnosis
 ```
+
+Only complete paths will be returned, so if part of the input string is not found in your dictionary, you may have problems.
 
 ## Tests
 
