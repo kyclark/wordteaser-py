@@ -32,7 +32,7 @@ The "wordteaser.py" program is an implementation of this idea:
 
 ```
 $ ./wordteaser.py -h
-usage: wordteaser.py [-h] [-w FILE] str
+usage: wordteaser.py [-h] [-w FILE] [-m min] str [str ...]
 
 Break phrasesofwordswithoutseparators into words
 
@@ -43,6 +43,7 @@ optional arguments:
   -h, --help            show this help message and exit
   -w FILE, --wordlist FILE
                         Wordlist file (default: /usr/share/dict/words)
+  -m min, --min min     Minimum word length (default: 1)
 ```
 
 Given the following dictionary:
@@ -65,49 +66,26 @@ The program will return the following combinations:
 
 ```
 $ ./wordteaser.py -w tests/dict1.txt abc
-['a', 'b', 'c']
-['a', 'bc']
-['ab', 'c']
-['abc']
+abc
+a + bc
+ab + c
+a + b + c
 ```
 
-It is currently failing with the input "abcd" as the 2nd group is missing the "a":
+Notice that the shortest paths/longest words are returned first:
 
 ```
 $ ./wordteaser.py -w tests/dict1.txt abcd
-['a', 'b', 'c', 'd']
-['b', 'cd']
-['a', 'bc', 'd']
-['a', 'bcd']
-['ab', 'c', 'd']
-['ab', 'cd']
-['abc', 'd']
+a + bcd
+ab + cd
+abc + d
+a + b + cd
+a + bc + d
+ab + c + d
+a + b + c + d
 ```
 
-The `find()` function that finds the possible combinations works.
-Here is a representation of the nested lists it finds with each prefix; that is, starting with the prefix "a," then "ab," then "abc":
-
-```
-['a', ['b', ['c', ['d', '']], ['cd', '']], ['bc', ['d', '']], ['bcd', '']]
-['ab', ['c', ['d', '']], ['cd', '']]
-['abc', ['d', '']]
-```
-
-We can see the first grouping finds that "a" could be followed by "b" which might be followed either by "c" and "d" or by "cd":
-
-```
-['a',
-    ['b', 
-        ['c', ['d', '']],   => ['a', 'b', 'c', 'd']
-        ['cd', '']],        => ['b', 'cd']      <=== Missing the leading "a"
-    ['bc', ['d', '']],      => ['a', 'bc', 'd']
-    ['bcd', '']             => ['a', 'bcd']
-]
-```
-
-I should probably consider using a directed graph to find my way through the nested lists, and for that I've looked at Python's "anytree" and "networkx" modules (see below).
-
-FWIW, given this dictionary:
+For practical application, we can use this dictionary:
 
 ```
 $ cat tests/dict3.txt
@@ -117,21 +95,34 @@ dx
 diagnosis
 ```
 
-It does appear to work:
+```
+$ ./wordteaser.py -w tests/dict3.txt ptdx patientdiagnosis
+pt + dx
+patient + diagnosis
+```
+
+## Tests
+
+Run `make test` or `python3 -m pip pytest`:
 
 ```
-$ ./wordteaser.py -w tests/dict3.txt ptdx
-['pt', 'dx']
+$ make test
+python3 -m pytest -xv
+============================= test session starts ==============================
+...
+
+tests/wordteaser_test.py::test_read_wordlist PASSED                      [ 11%]
+tests/wordteaser_test.py::test_read_wordlist_min_len PASSED              [ 22%]
+tests/wordteaser_test.py::test_find PASSED                               [ 33%]
+tests/wordteaser_test.py::test_get_leaf_paths PASSED                     [ 44%]
+tests/wordteaser_test.py::test_find_paths PASSED                         [ 55%]
+tests/wordteaser_test.py::test_exists PASSED                             [ 66%]
+tests/wordteaser_test.py::test_usage PASSED                              [ 77%]
+tests/wordteaser_test.py::test_abc PASSED                                [ 88%]
+tests/wordteaser_test.py::test_ptdx PASSED                               [100%]
+
+============================== 9 passed in 0.29s ===============================
 ```
-
-# See also
-
-* https://github.com/keredson/wordninja
-* https://github.com/networkx/networkx
-* https://nlp.stanford.edu/IR-book/html/htmledition/tokenization-1.html
-* https://stackoverflow.com/questions/8870261/how-to-split-text-without-spaces-into-list-of-words
-* http://norvig.com/ngrams/
-* https://pypi.org/project/anytree/
 
 ## Author
 

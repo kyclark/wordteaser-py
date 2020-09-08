@@ -5,16 +5,14 @@ Purpose: Break phrasesofwordswithoutseparators into words
 """
 
 import argparse
-import io
-from itertools import chain
 from collections import defaultdict
 from typing import NamedTuple, TextIO, Dict, List, Any
-from pprint import pprint
 
 
 class Args(NamedTuple):
-    text: str
+    text: List[str]
     wordlist: TextIO
+    min_word_len: int
 
 
 Lookup = Dict[str, List[str]]
@@ -28,7 +26,11 @@ def get_args() -> Args:
         description='Break phrasesofwordswithoutseparators into words',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument('text', metavar='str', help='Input text')
+    parser.add_argument('text',
+                        metavar='str',
+                        help='Input text',
+                        type=str,
+                        nargs='+')
 
     parser.add_argument('-w',
                         '--wordlist',
@@ -37,9 +39,16 @@ def get_args() -> Args:
                         type=argparse.FileType('rt'),
                         default='/usr/share/dict/words')
 
+    parser.add_argument('-m',
+                        '--min',
+                        help='Minimum word length',
+                        metavar='min',
+                        type=int,
+                        default=1)
+
     args = parser.parse_args()
 
-    return Args(args.text, args.wordlist)
+    return Args(args.text, args.wordlist, args.min)
 
 
 # --------------------------------------------------
@@ -47,73 +56,87 @@ def main() -> None:
     """ Make a jazz noise here """
 
     args = get_args()
-    words = read_wordlist(args.wordlist)
-    text = args.text
-    hits = find(text, words)
+    words = read_wordlist(args.wordlist, args.min_word_len)
 
-    for combo in chain.from_iterable(map(flatten, hits)):
-        print(combo)
+    for text in args.text:
+        for path in find_paths(text, words):
+            print(' + '.join(path))
 
 
 # --------------------------------------------------
-def read_wordlist(fh: TextIO) -> Lookup:
-    """ Read wordlist """
+def find_paths(text, words):
+    """
+    Find all possible paths of the words through the text
+    Return only those paths that complete the given text (no partial matches)
+    in the order of the shortest paths (so using the longest words)
+    """
+
+    paths = find(text, words)
+
+    return list(
+        filter(lambda p: len(''.join(p)) == len(text),
+               sorted(get_leaf_paths(paths), key=len)))
+
+
+# --------------------------------------------------
+def read_wordlist(fh: TextIO, min_len: int) -> Lookup:
+    """
+    Find all the words of a minimum length in the wordlist
+    Return a dictionary where the keys are the first letters of the words
+    """
 
     words = defaultdict(list)
 
-    for word in filter(None, map(str.rstrip, fh)):
+    for word in filter(lambda w: len(w) >= min_len, map(str.rstrip, fh)):
         words[word[0]].append(word)
 
     return words
 
 
 # --------------------------------------------------
-def find(text: str, words: Lookup) -> List[Any]:
+def find(text: str, words: Lookup) -> Dict[str, Any]:
     """
     Look in "text" for any occurrence of the "words"
+    Return a nested dictionary representing all possible paths
+    Some of the paths may be incomplete
     """
 
     if not text:
-        return ['']
+        return {}
 
     char = text[0]
     if char not in words:
-        return ['']
+        return {}
 
-    hits = []
+    hits = {}
     if char in words:
         for word in filter(lambda w: text.startswith(w), words[char]):
-            hits.append([word] + find(text[len(word):], words))
+            hits[word] = find(text[len(word):], words)
 
     return hits
 
 
 # --------------------------------------------------
-def stringer(xs: List[Any]) -> str:
+def get_leaf_paths(tree: Dict[str, Any]) -> List[List[str]]:
     """
-    Turn the nested list of lists from find() into a string
+    Find all paths
+    Had to write the "helper" function due to
+    some sort of weird persistence of the accumulator b/w calls!
+
+    Cf https://stackoverflow.com/questions/60039297/
+    return-a-list-of-paths-to-leaf-nodes-from-a-nested-list-of-lists
     """
+    def helper(tree: Dict[str, Any], path: List[Any],
+               acc: List[Any]) -> List[List[str]]:
+        for node, children in tree.items():
+            if children:  # not leaf
+                helper(children, path + [node], acc)
+            else:
+                acc.append(path + [node])
 
-    if not xs:
-        return ''
+        return acc
 
-    # e.g., ['c', '']
-    if xs[1] == '':
-        return xs[0]
-
-    def cat(a, b=''):
-        return f'{a}+{b}' if b else a
-
-    return ':'.join([cat(xs[0], stringer(x)) for x in xs[1:]])
-
-
-# --------------------------------------------------
-def flatten(xs: List[Any]) -> str:
-    """
-    Turn the nested list of lists from find() into single list
-    """
-
-    return [word.split('+') for word in stringer(xs).split(':')]
+    return helper(tree, [], [])
 
 
 # --------------------------------------------------
